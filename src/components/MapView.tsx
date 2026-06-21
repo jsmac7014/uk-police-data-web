@@ -51,8 +51,9 @@ export default function MapView({
     const container = containerRef.current;
     if (!container) return;
     return () => {
-      if (container._leaflet_id) {
-        delete container._leaflet_id;
+      const id = (container as unknown as Record<string, unknown>)._leaflet_id;
+      if (id) {
+        delete (container as unknown as Record<string, unknown>)._leaflet_id;
       }
     };
   }, []);
