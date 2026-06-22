@@ -9,6 +9,8 @@ import BottomSheet from "@/components/BottomSheet";
 import OutcomeModal from "@/components/OutcomeModal";
 import OutcomeBreakdown from "@/components/OutcomeBreakdown";
 import TrendChart from "@/components/TrendChart";
+import DownloadButton from "@/components/DownloadButton";
+import type { ViewMode } from "@/components/MapView";
 import {
   getStreetCrimes,
   getStopsStreet,
@@ -63,11 +65,16 @@ export default function CrimeApp({
   const [filter, setFilter] = useState("all-crime");
   const [snap, setSnap] = useState<SnapPoint>("half");
   const [showStops, setShowStops] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>("cluster");
   const [selectedCrime, setSelectedCrime] = useState<Crime | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("search");
   const [mapLoading, setMapLoading] = useState(false);
   const [pendingCenter, setPendingCenter] = useState<{ lat: number; lng: number } | null>(null);
   const lastMoveRef = useRef<{ lat: number; lng: number } | null>(null);
+  const [mapEl, setMapEl] = useState<HTMLDivElement | null>(null);
+  const mapContainerRef = useCallback((node: HTMLDivElement | null) => {
+    setMapEl(node);
+  }, []);
 
   const trendDates = useMemo(() => {
     const idx = initialDates.indexOf(date);
@@ -193,17 +200,41 @@ export default function CrimeApp({
             filter={filter}
             onFilterChange={setFilter}
           />
-          <button
-            onClick={() => setShowStops((s) => !s)}
-            className={`ml-auto mr-3 flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition ${
-              showStops
-                ? "bg-amber-400 text-amber-950"
-                : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
-            }`}
-          >
-            <span className="inline-block h-2.5 w-2.5 rotate-45 rounded-[2px] bg-amber-700" />
-            Stop &amp; Search ({stops.length})
-          </button>
+          <div className="ml-auto mr-3 flex items-center gap-2">
+            <div className="flex overflow-hidden rounded-full border border-zinc-200 dark:border-zinc-700">
+              <button
+                onClick={() => setViewMode("cluster")}
+                className={`px-3 py-1 text-xs font-medium transition ${
+                  viewMode === "cluster"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "bg-white text-zinc-600 hover:bg-zinc-100 dark:bg-zinc-950 dark:text-zinc-300"
+                }`}
+              >
+                Cluster
+              </button>
+              <button
+                onClick={() => setViewMode("heatmap")}
+                className={`px-3 py-1 text-xs font-medium transition ${
+                  viewMode === "heatmap"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "bg-white text-zinc-600 hover:bg-zinc-100 dark:bg-zinc-950 dark:text-zinc-300"
+                }`}
+              >
+                Heatmap
+              </button>
+            </div>
+            <button
+              onClick={() => setShowStops((s) => !s)}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition ${
+                showStops
+                  ? "bg-amber-400 text-amber-950"
+                  : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+              }`}
+            >
+              <span className="inline-block h-2.5 w-2.5 rotate-45 rounded-[2px] bg-amber-700" />
+              Stop &amp; Search ({stops.length})
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -212,7 +243,7 @@ export default function CrimeApp({
           </div>
         )}
 
-        <div className="relative flex-1">
+        <div ref={mapContainerRef} className="relative flex-1">
           <MapView
             crimes={crimes}
             categories={categories}
@@ -220,6 +251,7 @@ export default function CrimeApp({
             filter={filter}
             stops={stops}
             showStops={showStops}
+            viewMode={viewMode}
             onCrimeClick={setSelectedCrime}
             onMapMove={handleMapMove}
           />
@@ -240,6 +272,15 @@ export default function CrimeApp({
               Search this area
             </button>
           )}
+          <div className="absolute right-3 top-3 z-[1500]">
+            <DownloadButton
+              mapContainer={mapEl}
+              locationName={locationName}
+              date={date}
+              crimeCount={filter === "all-crime" ? crimes.length : crimes.filter((c) => c.category === filter).length}
+              filterLabel={filter === "all-crime" ? "All crime" : filter}
+            />
+          </div>
         </div>
 
         <BottomSheet
@@ -301,15 +342,39 @@ export default function CrimeApp({
 
             {mobileTab === "categories" && (
               <div className="flex flex-col gap-3">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={showStops}
-                    onChange={(e) => setShowStops(e.target.checked)}
-                    className="h-4 w-4 accent-amber-500"
-                  />
-                  <span>Show stop &amp; search ({stops.length})</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <div className="flex overflow-hidden rounded-full border border-zinc-200 dark:border-zinc-700">
+                    <button
+                      onClick={() => setViewMode("cluster")}
+                      className={`px-3 py-1 text-xs font-medium transition ${
+                        viewMode === "cluster"
+                          ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                          : "bg-white text-zinc-600 dark:bg-zinc-950 dark:text-zinc-300"
+                      }`}
+                    >
+                      Cluster
+                    </button>
+                    <button
+                      onClick={() => setViewMode("heatmap")}
+                      className={`px-3 py-1 text-xs font-medium transition ${
+                        viewMode === "heatmap"
+                          ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                          : "bg-white text-zinc-600 dark:bg-zinc-950 dark:text-zinc-300"
+                      }`}
+                    >
+                      Heatmap
+                    </button>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={showStops}
+                      onChange={(e) => setShowStops(e.target.checked)}
+                      className="h-4 w-4 accent-amber-500"
+                    />
+                    <span>Stops ({stops.length})</span>
+                  </label>
+                </div>
                 <CategoryFilter
                   crimes={crimes}
                   categories={categories}

@@ -11,6 +11,9 @@ import L from "leaflet";
 import "leaflet.markercluster";
 import type { Crime, CrimeCategory, StopAndSearch } from "@/lib/police-api";
 import ClusterLayer from "@/components/ClusterLayer";
+import HeatmapLayer from "@/components/HeatmapLayer";
+
+export type ViewMode = "cluster" | "heatmap";
 
 type Props = {
   crimes: Crime[];
@@ -19,6 +22,7 @@ type Props = {
   filter: string;
   stops: StopAndSearch[];
   showStops: boolean;
+  viewMode: ViewMode;
   onCrimeClick?: (crime: Crime) => void;
   onMapMove?: (center: { lat: number; lng: number }) => void;
 };
@@ -63,6 +67,7 @@ export default function MapView({
   filter,
   stops,
   showStops,
+  viewMode,
   onCrimeClick,
   onMapMove,
 }: Props) {
@@ -91,14 +96,18 @@ export default function MapView({
         <MapMoveHandler onMapMove={onMapMove} />
         <Marker position={center} icon={centerIcon()} />
 
-        <ClusterLayer
-          crimes={crimes}
-          categories={categories}
-          filter={filter}
-          stops={stops}
-          showStops={showStops}
-          onCrimeClick={onCrimeClick}
-        />
+        {viewMode === "cluster" ? (
+          <ClusterLayer
+            crimes={crimes}
+            categories={categories}
+            filter={filter}
+            stops={stops}
+            showStops={showStops}
+            onCrimeClick={onCrimeClick}
+          />
+        ) : (
+          <HeatmapLayer crimes={crimes} filter={filter} />
+        )}
       </MapContainer>
 
       <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] hidden rounded-md bg-white/90 px-3 py-2 text-xs shadow-md dark:bg-zinc-900/90 dark:text-zinc-200 md:block">
