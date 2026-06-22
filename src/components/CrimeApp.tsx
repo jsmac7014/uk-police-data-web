@@ -215,6 +215,7 @@ export default function CrimeApp({
         <div className="relative flex-1">
           <MapView
             crimes={crimes}
+            categories={categories}
             center={searchCenter}
             filter={filter}
             stops={stops}
