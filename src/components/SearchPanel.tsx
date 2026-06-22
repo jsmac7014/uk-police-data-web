@@ -73,7 +73,7 @@ export default function SearchPanel({
           <span>Show stop &amp; search ({stops.length})</span>
         </label>
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          <p className="mb-2 text-xs font-semibold uppercase text-zinc-500">
             Crime categories
           </p>
           <CategoryFilter
@@ -87,7 +87,7 @@ export default function SearchPanel({
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+        <p className="mb-2 text-xs font-semibold uppercase text-zinc-500">
           Outcome breakdown
         </p>
         <OutcomeBreakdown crimes={crimes} />

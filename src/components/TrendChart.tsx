@@ -83,7 +83,7 @@ export default function TrendChart({ lat, lng, dates, categories }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+        <p className="text-xs font-semibold uppercase text-zinc-500">
           Crime trend
         </p>
         <span className="text-xs text-zinc-400">{dates.length} months</span>

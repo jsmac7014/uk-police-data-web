@@ -28,8 +28,8 @@ export function colorFor(category: string): string {
   return palette[Math.abs(hash) % palette.length];
 }
 
-export function categoryName(category: string, categories: CrimeCategory[]): string {
-  return categories.find((c) => c.url === category)?.name ?? category;
+export function categoryName(category: string, categories: CrimeCategory[] | undefined): string {
+  return categories?.find((c) => c.url === category)?.name ?? category;
 }
 
 type Props = {

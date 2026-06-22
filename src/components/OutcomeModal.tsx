@@ -114,7 +114,7 @@ export default function OutcomeModal({ crime, categories, onClose }: Props) {
         {!loading && hasPersistentId && data && (
           <div className="space-y-3">
             <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900">
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              <p className="text-xs font-semibold uppercase text-zinc-500">
                 Latest outcome
               </p>
               <p className="mt-1 text-sm">
@@ -125,7 +125,7 @@ export default function OutcomeModal({ crime, categories, onClose }: Props) {
             </div>
 
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              <p className="mb-2 text-xs font-semibold uppercase text-zinc-500">
                 Outcome history ({data.outcomes.length})
               </p>
               {data.outcomes.length === 0 ? (

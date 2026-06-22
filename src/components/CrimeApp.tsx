@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import SearchPanel from "@/components/SearchPanel";
 import SearchForm from "@/components/SearchForm";
@@ -55,6 +55,7 @@ export default function CrimeApp({
   const [categories] = useState<CrimeCategory[]>(initialCategories);
   const [lat, setLat] = useState(initialLat);
   const [lng, setLng] = useState(initialLng);
+  const [searchCenter, setSearchCenter] = useState<[number, number]>([initialLat, initialLng]);
   const [date, setDate] = useState(initialDate);
   const [locationName, setLocationName] = useState(initialLocationName);
   const [loading, setLoading] = useState(false);
@@ -64,6 +65,9 @@ export default function CrimeApp({
   const [showStops, setShowStops] = useState(true);
   const [selectedCrime, setSelectedCrime] = useState<Crime | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("search");
+  const [mapLoading, setMapLoading] = useState(false);
+  const [pendingCenter, setPendingCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const lastMoveRef = useRef<{ lat: number; lng: number } | null>(null);
 
   const trendDates = useMemo(() => {
     const idx = initialDates.indexOf(date);
@@ -84,9 +88,12 @@ export default function CrimeApp({
         setStops(stopsResult);
         setLat(params.lat);
         setLng(params.lng);
+        setSearchCenter([params.lat, params.lng]);
         setDate(params.date);
         setLocationName(params.name);
         setFilter("all-crime");
+        lastMoveRef.current = { lat: params.lat, lng: params.lng };
+        setPendingCenter(null);
         if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
           setSnap("collapsed");
         }
@@ -100,6 +107,52 @@ export default function CrimeApp({
     },
     []
   );
+
+  const handleMapMove = useCallback((newCenter: { lat: number; lng: number }) => {
+    const last = lastMoveRef.current;
+    const dist = last
+      ? Math.sqrt((last.lat - newCenter.lat) ** 2 + (last.lng - newCenter.lng) ** 2)
+      : Infinity;
+    if (dist < 0.01) return;
+    setPendingCenter(newCenter);
+  }, []);
+
+  const handleSearchHere = useCallback(async () => {
+    if (!pendingCenter) return;
+    const newCenter = pendingCenter;
+    setPendingCenter(null);
+    lastMoveRef.current = newCenter;
+    setMapLoading(true);
+    setError(null);
+    try {
+      const [crimesResult, stopsResult] = await Promise.all([
+        getStreetCrimes({ lat: newCenter.lat, lng: newCenter.lng, date }),
+        getStopsStreet({ lat: newCenter.lat, lng: newCenter.lng, date }),
+      ]);
+      setCrimes(crimesResult);
+      setStops(stopsResult);
+      setLat(newCenter.lat);
+      setLng(newCenter.lng);
+      setFilter("all-crime");
+      try {
+        const geoRes = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${newCenter.lat}&lon=${newCenter.lng}&zoom=14&accept-language=en&countrycodes=gb`
+        );
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          const parts = (geoData.display_name as string).split(",");
+          const name = parts.slice(0, 2).join(", ").trim();
+          setLocationName(name || "Map location");
+        }
+      } catch {
+        setLocationName("Map location");
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load data.");
+    } finally {
+      setMapLoading(false);
+    }
+  }, [pendingCenter, date]);
 
   const filteredCount =
     filter === "all-crime" ? crimes.length : crimes.filter((c) => c.category === filter).length;
@@ -162,12 +215,30 @@ export default function CrimeApp({
         <div className="relative flex-1">
           <MapView
             crimes={crimes}
-            center={[lat, lng]}
+            center={searchCenter}
             filter={filter}
             stops={stops}
             showStops={showStops}
             onCrimeClick={setSelectedCrime}
+            onMapMove={handleMapMove}
           />
+          {mapLoading && (
+            <div className="pointer-events-none absolute top-3 left-1/2 z-[1500] -translate-x-1/2 rounded-full bg-zinc-900/90 px-4 py-2 text-xs font-medium text-white shadow-lg">
+              Loading data for this area...
+            </div>
+          )}
+          {pendingCenter && !mapLoading && (
+            <button
+              onClick={handleSearchHere}
+              className="absolute top-3 left-1/2 z-[1500] -translate-x-1/2 flex items-center gap-2 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-lg transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12a9 9 0 1 1-3-6.7L21 8" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M21 3v5h-5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Search this area
+            </button>
+          )}
         </div>
 
         <BottomSheet
