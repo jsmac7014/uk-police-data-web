@@ -5,7 +5,7 @@ import { useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet.markercluster";
 import type { Crime, CrimeCategory, StopAndSearch } from "@/lib/police-api";
-import { colorFor, categoryName } from "@/components/CategoryFilter";
+import { colorFor } from "@/components/CategoryFilter";
 
 type Props = {
   crimes: Crime[];
@@ -82,15 +82,6 @@ export default function ClusterLayer({
         fillOpacity: 0.7,
         weight: 1,
       });
-      marker.bindPopup(
-        `<div style="min-width:180px">
-          <div style="font-weight:600;margin-bottom:2px">${categoryName(crime.category, categories)}</div>
-          <div style="color:#52525b;font-size:12px">${crime.location.street.name}</div>
-          <div style="color:#71717a;font-size:12px">${crime.month}</div>
-          ${crime.outcome_status ? `<div style="color:#52525b;font-size:12px;margin-top:2px">Outcome: ${crime.outcome_status.category}</div>` : ""}
-          ${crime.persistent_id ? `<button type="button" data-crime-id="${crime.id}" style="margin-top:6px;padding:4px 10px;font-size:12px;font-weight:500;background:#18181b;color:#fff;border:none;border-radius:4px;cursor:pointer">View full outcome history</button>` : ""}
-        </div>`
-      );
       marker.on("click", (e) => {
         (e as L.LeafletMouseEvent).originalEvent.stopPropagation();
         onCrimeClick?.(crime);
